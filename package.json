@@ -1,0 +1,31 @@
+{
+  "name": "ren-playground",
+  "version": "1.0.0",
+  "description": "A browser-based playground for Ren: a dynamically typed, functional scripting lanugage.",
+  "author": "",
+  "license": "ISC",
+  "main": "docs/index.html",
+  "scripts": {
+    "start": "parcel src/index.html",
+    "serve": "parcel build src/index.html --dist-dir docs --no-content-hash --no-source-maps && npm run build && npx http-server ./docs",
+    "build": "parcel build src/index.html --dist-dir docs --no-content-hash --no-source-maps --public-url https://ren-lang.github.io/playground"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ren-lang/playground.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ren-lang/playground/issues"
+  },
+  "homepage": "https://github.com/ren-lang/playground#readme",
+  "devDependencies": {
+    "@parcel/transformer-elm": "^2.0.0-beta.2",
+    "elm": "^0.19.1-5",
+    "node-elm-compiler": "^5.0.6",
+    "parcel": "^2.0.0-beta.2",
+    "parcel-reporter-static-files-copy": "^1.3.0"
+  },
+  "dependencies": {
+    "codeflask": "^1.4.1"
+  }
+}
