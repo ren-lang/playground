@@ -1,0 +1,132 @@
+:root {
+    --colour-ren-50: #B7BACF;
+    --colour-ren-100: #A8ABC5;
+    --colour-ren-200: #898EB1;
+    --colour-ren-300: #6A709D;
+    --colour-ren-400: #545A80;
+    --colour-ren-500: #404461;
+    --colour-ren-600: #2C2E42;
+    --colour-ren-700: #171924;
+    --colour-ren-800: #030305;
+    --colour-ren-900: #000000;
+}
+
+.text-ren-50 {
+    color: var(--colour-ren-50)
+}
+
+.text-ren-100 {
+    color: var(--colour-ren-100)
+}
+
+.text-ren-200 {
+    color: var(--colour-ren-200)
+}
+
+.text-ren-300 {
+    color: var(--colour-ren-300)
+}
+
+.text-ren-400 {
+    color: var(--colour-ren-400)
+}
+
+.text-ren-500 {
+    color: var(--colour-ren-500)
+}
+
+.text-ren-600 {
+    color: var(--colour-ren-600)
+}
+
+.text-ren-700 {
+    color: var(--colour-ren-700)
+}
+
+.text-ren-800 {
+    color: var(--colour-ren-800)
+}
+
+.text-ren-900 {
+    color: var(--colour-ren-900)
+}
+
+.bg-ren-50 {
+    background-color: var(--colour-ren-50)
+}
+
+.bg-ren-100 {
+    background-color: var(--colour-ren-100)
+}
+
+.bg-ren-200 {
+    background-color: var(--colour-ren-200)
+}
+
+.bg-ren-300 {
+    background-color: var(--colour-ren-300)
+}
+
+.bg-ren-400 {
+    background-color: var(--colour-ren-400)
+}
+
+.bg-ren-500 {
+    background-color: var(--colour-ren-500)
+}
+
+.bg-ren-600 {
+    background-color: var(--colour-ren-600)
+}
+
+.bg-ren-700 {
+    background-color: var(--colour-ren-700)
+}
+
+.bg-ren-800 {
+    background-color: var(--colour-ren-800)
+}
+
+.bg-ren-900 {
+    background-color: var(--colour-ren-900)
+}
+
+:hover.hover\:bg-ren-50 {
+    background-color: var(--colour-ren-50)
+}
+
+:hover.hover\:bg-ren-100 {
+    background-color: var(--colour-ren-100)
+}
+
+:hover.hover\:bg-ren-200 {
+    background-color: var(--colour-ren-200)
+}
+
+:hover.hover\:bg-ren-300 {
+    background-color: var(--colour-ren-300)
+}
+
+:hover.hover\:bg-ren-400 {
+    background-color: var(--colour-ren-400)
+}
+
+:hover.hover\:bg-ren-500 {
+    background-color: var(--colour-ren-500)
+}
+
+:hover.hover\:bg-ren-600 {
+    background-color: var(--colour-ren-600)
+}
+
+:hover.hover\:bg-ren-700 {
+    background-color: var(--colour-ren-700)
+}
+
+:hover.hover\:bg-ren-800 {
+    background-color: var(--colour-ren-800)
+}
+
+:hover.hover\:bg-ren-900 {
+    background-color: var(--colour-ren-900)
+}
