@@ -18,3 +18,8 @@ export function compose(f) {
         return g(f(x))
     }
 }
+
+// call : (() -> a) -> a
+export function call(f) {
+    return f()
+}
