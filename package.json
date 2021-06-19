@@ -6,9 +6,9 @@
   "license": "ISC",
   "main": "docs/index.html",
   "scripts": {
-    "start": "parcel src/index.html",
-    "serve": "parcel build src/index.html --dist-dir docs --no-content-hash --no-source-maps && npm run build && npx http-server ./docs",
-    "build": "parcel build src/index.html --dist-dir docs --no-content-hash --no-source-maps --public-url https://ren-lang.github.io/playground"
+    "start": "npm run serve",
+    "serve": "rm -rf .parcel-cache docs && parcel watch src/index.html & npx http-server ./docs -c-1",
+    "build": "rm -rf .parcel-cache docs && parcel build src/index.html --dist-dir docs --no-content-hash --no-source-maps --public-url https://ren-lang.github.io/playground"
   },
   "repository": {
     "type": "git",
