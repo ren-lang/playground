@@ -14,7 +14,7 @@
             "elm/parser": "1.1.0",
             "elm/svg": "1.0.1",
             "feathericons/elm-feather": "1.5.0",
-            "ren-lang/compiler": "4.0.2"
+            "ren-lang/compiler": "4.0.3"
         },
         "indirect": {
             "Janiczek/transform": "1.1.0",
