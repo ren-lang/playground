@@ -28,6 +28,9 @@ port toClipboard : String -> Cmd msg
 port toJavascript : Maybe String -> Cmd msg
 
 
+port toConsole : (( String, String ) -> msg) -> Sub msg
+
+
 
 -- MAIN ------------------------------------------------------------------------
 
@@ -52,6 +55,7 @@ type alias Model =
     { source : String
     , output : Maybe String
     , lastSuccessfulOutput : String
+    , console : List ( String, String )
     , size : String
     }
 
@@ -67,11 +71,11 @@ init : Flags -> IO Msg Model
 init flags =
     case flags.code of
         Just source ->
-            Data.IO.pure (Model "" Nothing "" "1/2")
+            Data.IO.pure (Model "" Nothing "" [] "1/2")
                 |> Data.IO.map (compileInput source)
 
         Nothing ->
-            Data.IO.pure (Model "" Nothing "" "1/2")
+            Data.IO.pure (Model "" Nothing "" [] "1/2")
                 |> Data.IO.map (compileInput Ren.Examples.helloworld)
 
 
@@ -83,6 +87,7 @@ init flags =
 type Msg
     = Typed Input String
     | Clicked Button
+    | ToConsole ( String, String )
 
 
 {-| -}
@@ -149,6 +154,10 @@ update msg model =
             Data.IO.pure model
                 |> Data.IO.map (\m -> { m | size = "1/2" })
 
+        ToConsole message ->
+            Data.IO.pure model
+                |> Data.IO.map (\m -> { m | console = message :: m.console })
+
 
 {-| -}
 parseInput : String -> Result (List Parser.DeadEnd) Ren.Compiler.Module
@@ -192,14 +201,44 @@ compileInput input model =
 view : Model -> Html Msg
 view model =
     UI.Layout.centred
-        [ Html.Attributes.class "w-full h-full bg-gray-50" ]
+        [ Html.Attributes.class "w-full h-full bg-gray-50"
+        ]
         [ UI.Layout.stack
             [ Html.Attributes.class "transition-all duration-300 ease-in-out"
             , Html.Attributes.class <| "w-full xl:w-" ++ model.size
             , Html.Attributes.class <| "h-full xl:h-" ++ model.size
+            , Html.Attributes.class "rounded-bl rounded-br shadow-lg"
             ]
             [ viewToolbar model
             , viewSplitEditor model
+            , UI.Layout.stack
+                [ Html.Attributes.class "bg-gray-100 flex-col-reverse overflow-y-scroll"
+                , Html.Attributes.class "transition-all duration-300 ease-in-out"
+                , Html.Attributes.class "font-mono p-1"
+                , Html.Attributes.class <|
+                    if model.size == "full" then
+                        "flex-1"
+
+                    else
+                        "h-16"
+                ]
+                (List.map
+                    (\( time, message ) ->
+                        UI.Layout.row
+                            [ Html.Attributes.class "" ]
+                            [ Html.span
+                                [ Html.Attributes.class "mr-2 text-gray-400" ]
+                                [ "[{time}] >"
+                                    |> String.replace "{time}" time
+                                    |> Html.text
+                                ]
+                            , Html.pre
+                                [ Html.Attributes.class "flex-1" ]
+                                [ Html.text message ]
+                            ]
+                    )
+                    model.console
+                )
             ]
         ]
 
@@ -272,8 +311,7 @@ viewToolbarDropdownMenuItem item =
 viewSplitEditor : Model -> Html Msg
 viewSplitEditor model =
     UI.Layout.row
-        [ Html.Attributes.class "flex-1 border bg-white shadow-lg"
-        , Html.Attributes.class "rounded-bl rounded-br"
+        [ Html.Attributes.class "flex-1 bg-white"
         ]
         [ UI.Editor.editor
             [ UI.Editor.language "ren"
@@ -298,4 +336,5 @@ viewSplitEditor model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        []
+        [ toConsole ToConsole
+        ]

@@ -12,6 +12,21 @@ const app = Elm.Main.init({
     }
 })
 
+const log = window.console.log
+window.console.log = function (...messages) {
+    log(...messages)
+    const time = new Date(Date.now()).toTimeString().substring(0, 8)
+
+    messages.forEach(message => {
+        app.ports.toConsole?.send(
+            [`[${time}]`, JSON.stringify(message, null, 2)
+                || message.toString?.()
+                || ""
+            ]
+        )
+    })
+}
+
 app.ports.toClipboard?.subscribe(source => {
     const code = encodeURI(source)
     const uri = location.href.replace(location.search, '') + `?code=${code}`
@@ -23,7 +38,7 @@ app.ports.toClipboard?.subscribe(source => {
 
 app.ports.toJavascript?.subscribe(source => {
     const href = location.href.replace(location.search, '')
-    // This fixes some weird quirk to do with relative imports. I'm not sure its
+    // This fixes some weird quirk to do with relative imports. I'm not sure it's
     // entirely necessary but I was deep in the weeds trying to work out why imports
     // weren't working and this was one of a few things I tried that seemed to 
     // work.
