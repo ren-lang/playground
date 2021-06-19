@@ -4,3 +4,11 @@ export function andThen(f) {
         return promise.then(f)
     }
 }
+
+
+// andCatch (e -> x) -> Promise e a -> Promise x a
+export function andCatch(f) {
+    return promise => {
+        return promise.catch(f)
+    }
+}
