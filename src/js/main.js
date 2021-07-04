@@ -46,7 +46,11 @@ app.ports.toJavascript?.subscribe(source => {
 
     source && import(ESM.toDataURI`${modifiedSource}`)
         .then(({ main }) => {
-            main && main()
+            const result = main && main() || undefined
+
+            if (result) {
+                console.log(result)
+            }
         })
         .catch(err => {
             window.alert(
