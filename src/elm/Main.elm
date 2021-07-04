@@ -8,13 +8,13 @@ import FeatherIcons
 import Html exposing (Html)
 import Html.Attributes
 import Html.Attributes.Extra
+import Html.Events
 import Html.Extra
 import Parser
 import Ren.Compiler exposing (Target(..))
 import Ren.Data.Module
 import Ren.Examples
 import UI.Button
-import UI.Editor
 import UI.Layout
 
 
@@ -179,7 +179,7 @@ parseInput input =
 {-| -}
 compileInput : String -> Model -> Model
 compileInput input model =
-    case parseInput input |> Result.map Ren.Compiler.optimise |> Result.map (Ren.Compiler.emit ES6) of
+    case parseInput input |> Result.map Ren.Compiler.optimise |> Result.map (Ren.Compiler.emit ESModule) of
         Ok code ->
             { model
                 | source = input
@@ -214,7 +214,7 @@ view model =
             , UI.Layout.stack
                 [ Html.Attributes.class "bg-gray-100 flex-col-reverse overflow-y-scroll"
                 , Html.Attributes.class "transition-all duration-300 ease-in-out"
-                , Html.Attributes.class "font-mono p-1"
+                , Html.Attributes.class "font-mono p-1 max-h-64"
                 , Html.Attributes.class <|
                     if model.size == "full" then
                         "flex-1"
@@ -311,25 +311,43 @@ viewToolbarDropdownMenuItem item =
 viewSplitEditor : Model -> Html Msg
 viewSplitEditor model =
     UI.Layout.row
-        [ Html.Attributes.class "flex-1 bg-white"
+        [ Html.Attributes.class "flex-1 bg-white font-mono"
         ]
-        [ UI.Editor.editor
-            [ UI.Editor.language "ren"
+        [ Html.textarea
+            [ Html.Attributes.class "flex-1 border-r resize-none p-2"
             , Html.Attributes.value model.source
-            , Html.Attributes.class "flex-1 border-r"
-            , UI.Editor.onInput (Typed Source)
+            , Html.Attributes.spellcheck False
+            , Html.Events.onInput (Typed Source)
             ]
-        , UI.Editor.viewer
-            [ UI.Editor.language "javascript"
-            , Html.Attributes.value <| Maybe.withDefault model.lastSuccessfulOutput model.output
-            , Html.Attributes.Extra.classWhen "opacity-25" (model.output == Nothing)
-            , Html.Attributes.class "flex-1 border-l"
+            []
+        , Html.textarea
+            [ Html.Attributes.class "flex-1 border-l resize-none p-2"
+            , Html.Attributes.Extra.classWhen "opacity-25" <|
+                model.output
+                    == Nothing
+            , Html.Attributes.value <|
+                Maybe.withDefault model.lastSuccessfulOutput model.output
             , Html.Attributes.readonly True
             ]
+            []
         ]
 
 
 
+-- [ UI.Editor.editor
+--     [ UI.Editor.language "ren"
+--     , Html.Attributes.value model.source
+--     , Html.Attributes.class "flex-1 border-r"
+--     , UI.Editor.onInput (Typed Source)
+--     ]
+-- , UI.Editor.viewer
+--     [ UI.Editor.language "javascript"
+--     , Html.Attributes.value <| Maybe.withDefault model.lastSuccessfulOutput model.output
+--     , Html.Attributes.Extra.classWhen "opacity-25" (model.output == Nothing)
+--     , Html.Attributes.class "flex-1 border-l"
+--     , Html.Attributes.readonly True
+--     ]
+-- ]
 -- SUBSCRIPTIONS ---------------------------------------------------------------
 
 
