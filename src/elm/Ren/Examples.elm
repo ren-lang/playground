@@ -62,10 +62,10 @@ pub let strings = {
 }
 
 pub let booleans = {
-    let t = true
-    let f = false
+  let t = true
+  let f = false
 
-    ret t || f
+  ret t || f
 }
 
 pub let objects = {
@@ -76,7 +76,7 @@ pub let objects = {
 }
 
 pub let arrays = [
-    numbers, strings, objects
+  numbers, strings, objects
 ]
 
 pub let lambdas = 
