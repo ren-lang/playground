@@ -1,7 +1,11 @@
-// get : Object -> String -> Maybe a
+import * as Maybe from './maybe'
+
+// get : String -> Object -> Maybe a
 export function get(key) {
     return (obj) => {
-        return obj[key] || null
+        return key in obj
+            ? Maybe.just(obj[key])
+            : Maybe.nothing
     }
 }
 
