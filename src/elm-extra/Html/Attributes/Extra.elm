@@ -4,11 +4,10 @@ import Html
 import Html.Attributes
 
 
-classWhen : String -> Bool -> Html.Attribute msg
-classWhen classes true =
-    Html.Attributes.class <|
-        if true then
-            classes
+when : Bool -> Html.Attribute msg -> Html.Attribute msg
+when true attr =
+    if true then
+        attr
 
-        else
-            ""
+    else
+        Html.Attributes.class ""

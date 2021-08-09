@@ -1,3 +1,10 @@
+// always : a -> b -> a
+export function always(x) {
+    return (y) => {
+        return x
+    }
+}
+
 // discard : a -> b -> b
 export function discard(x) {
     return (y) => {
@@ -17,9 +24,4 @@ export function compose(f) {
     return (g) => (x) => {
         return g(f(x))
     }
-}
-
-// call : (() -> a) -> a
-export function call(f) {
-    return f()
 }

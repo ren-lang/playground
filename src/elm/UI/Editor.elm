@@ -1,31 +1,22 @@
-module UI.Editor exposing
-    ( editor, viewer
-    , language, lineNumbers
-    , onInput
-    )
+module UI.Editor exposing (..)
 
-{-|
-
-@docs editor, viewer
-@docs language, lineNumbers
-@docs onInput
-
--}
+-- IMPORTS ---------------------------------------------------------------------
 
 import Html exposing (Html)
 import Html.Attributes
-import Html.Events
-import Json.Decode
 
 
-editor : List (Html.Attribute msg) -> Html msg
-editor attrs =
-    Html.node "codeflask-editor" attrs [ Html.text "" ]
+
+-- ATTRIBUTES ------------------------------------------------------------------
 
 
-viewer : List (Html.Attribute msg) -> Html msg
-viewer attrs =
-    Html.node "codeflask-viewer" attrs [ Html.text "" ]
+readonly : Bool -> Html.Attribute msg
+readonly enabled =
+    if enabled then
+        Html.Attributes.attribute "readonly" "true"
+
+    else
+        Html.Attributes.attribute "readonly" ""
 
 
 language : String -> Html.Attribute msg
@@ -33,18 +24,19 @@ language lang =
     Html.Attributes.attribute "language" lang
 
 
-lineNumbers : Bool -> Html.Attribute msg
-lineNumbers enabled =
+linenumbers : Bool -> Html.Attribute msg
+linenumbers enabled =
     if enabled then
         Html.Attributes.attribute "line-numbers" "true"
 
     else
-        Html.Attributes.attribute "" ""
+        Html.Attributes.attribute "line-numbers" ""
 
 
-onInput : (String -> msg) -> Html.Attribute msg
-onInput handler =
-    Html.Events.on "value-changed"
-        (Json.Decode.at [ "target", "value" ] Json.Decode.string
-            |> Json.Decode.map handler
-        )
+
+-- ELEMENTS --------------------------------------------------------------------
+
+
+view : String -> List (Html.Attribute msg) -> Html msg
+view value attrs =
+    Html.node "code-editor" (Html.Attributes.value value :: attrs) []

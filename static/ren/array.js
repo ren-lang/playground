@@ -78,6 +78,13 @@ export function filterMap(f) {
     }
 }
 
+// forEach : (a -> ()) -> Array a -> ()
+export function forEach(f) {
+    return (arr) => {
+        arr.forEach(a => f(a))
+    }
+}
+
 // UTILS -----------------------------------------------------------------------
 // length : Array a -> Number
 export function length(arr) {

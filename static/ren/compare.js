@@ -12,28 +12,28 @@ export function notEq(a) {
     }
 }
 
-// lt : a -> b -> Boolean
+// lt : a -> a -> Boolean
 export function lt(a) {
     return (b) => {
         return a < b
     }
 }
 
-// lte : a -> b -> Boolean
+// lte : a -> a -> Boolean
 export function lte(a) {
     return (b) => {
         return a <= b
     }
 }
 
-// gt : a -> b -> Boolean
+// gt : a -> a -> Boolean
 export function gt(a) {
     return (b) => {
         return a > b
     }
 }
 
-// gte : a -> b -> Boolean
+// gte : a -> a -> Boolean
 export function gte(a) {
     return (b) => {
         return a >= b

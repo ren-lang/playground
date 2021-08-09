@@ -1,6 +1,7 @@
-import './components/codeflask-editor.js'
+import { CodeEditor } from './web-components/codeflask.js'
 import { Elm } from '../elm/Main.elm'
-import * as ESM from './esm.js'
+
+window.customElements.define('code-editor', CodeEditor)
 
 const params = new URLSearchParams(window.location.search)
 const code = params.has('code') ? decodeURI(params.get('code')) : null
@@ -13,7 +14,8 @@ const app = Elm.Main.init({
 })
 
 const log = window.console.log
-window.console.log = function (...messages) {
+
+window.console.log = (...messages) => {
     log(...messages)
     const time = new Date(Date.now()).toTimeString().substring(0, 8)
 
@@ -36,19 +38,25 @@ app.ports.toClipboard?.subscribe(source => {
         .catch(console.err)
 })
 
-app.ports.toJavascript?.subscribe(source => {
+
+app.ports.toJavascript?.subscribe((source = '') => {
     const href = location.href.replace(location.search, '')
-    // This fixes some weird quirk to do with relative imports. I'm not sure it's
-    // entirely necessary but I was deep in the weeds trying to work out why imports
-    // weren't working and this was one of a few things I tried that seemed to 
-    // work.
-    const modifiedSource = source.replaceAll(/ren\/(.+)'/g, href + 'ren/$1.js\'')
+    const src = source.replaceAll(/ren\/(.+)'/g, href + 'ren/$1.js\'')
+    const esm = 'data:text/javascript;base64,' + btoa(src)
 
-    source && import(ESM.toDataURI`${modifiedSource}`)
-        .then(({ main }) => {
-            const result = main && main() || undefined
+    src && import(esm)
+        .then(({ main }) => main && main() || undefined)
+        .then(result => {
 
-            if (result) {
+            // This super naive RegEx attempts to determine if the provided string
+            // might be HTML/XML or not. It's *very* naive and will definitely
+            // throw up false positives, but it's fine for now.
+            //
+            // If it is an HTML string, we ship it off to the playground display
+            // for rendering.
+            if (result && typeof result === 'string' && /(<([^>]+)>)/i.test(result)) {
+                document.querySelector('#playground-display').innerHTML = result
+            } else if (result) {
                 console.log(result)
             }
         })
@@ -64,4 +72,3 @@ app.ports.toJavascript?.subscribe(source => {
             )
         })
 })
-

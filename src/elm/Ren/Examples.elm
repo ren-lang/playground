@@ -1,84 +1,28 @@
 module Ren.Examples exposing (..)
 
 
-helloworld : String
-helloworld =
-    String.trim """
-pub fun main = _ =>
-  console.log 'Hello world!'
-"""
+bottlesOfBeer : String
+bottlesOfBeer =
+    """import 'ren/array' as Array exposing { forEach }
 
+pub fun main = _ =>  {
+    fun makeVerses = n => if n >= 0 then verse n :: makeVerses (n - 1) else []
+    let verses = makeVerses 20
 
-
---------------------------------------------------------------------------------
-
-
-letExample : String
-letExample =
-    String.trim """
-pub let n = 10
-
-pub let { x, y } = { x: 10.5, y: 7 }
-
-pub let [ a, b ] = [ 'foo', 'bar' ]
-
-pub let complexValue = {
-  let m = 2.25
-  ret n ^ m
-}
-"""
-
-
-funExample : String
-funExample =
-    String.trim """
-pub fun mul = x y => x * y
-
-pub fun double = x => {
-  let n = 2
-  ret mul x n
-}
-"""
-
-
-primitivesExample : String
-primitivesExample =
-    String.trim """
-pub let numbers = {
-  let ints = 1234
-  let floats = 0.56789
-  let hex = 0xEEE
-  let oct = 0o567
-  let bin = 0b110011
-
-  ret ints + floats + hex + oct + bin
+    ret verses 
+        |> forEach console.log 
 }
 
-pub let strings = {
-  let singleQuotes = 'superior character'
-  let doubleQuotes = "rubbish character"
+pub fun verse = n => when n
+    is 0 =>
+        'No more bottles of beer on the wall, no more bottles of beer. ' +
+        'Go to the store and buy some more, 99 bottles of beer on the wall.'
+    is _ if n > 0 =>
+        `${bottles n} of beer on the wall, ${bottles n} of beer. ` +
+        `Take one down and pass it around, ${bottles (n - 1)} of beer on the wall.`
 
-  ret singleQuotes + doubleQuotes
-}
-
-pub let booleans = {
-  let t = true
-  let f = false
-
-  ret t || f
-}
-
-pub let objects = {
-  foo: 'foo',
-  bar: 1337,
-  numbers,
-  strings
-}
-
-pub let arrays = [
-  numbers, strings, objects
-]
-
-pub let lambdas = 
-  fun x y => x * y
+pub fun bottles = n => when n
+    is 0 => 'no more bottles'
+    is 1 => '1 bottle'
+    else => `${n} bottles`
 """

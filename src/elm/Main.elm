@@ -4,17 +4,18 @@ port module Main exposing (main)
 
 import Browser
 import Data.IO exposing (IO)
-import FeatherIcons
 import Html exposing (Html)
 import Html.Attributes
 import Html.Attributes.Extra
 import Html.Events
-import Html.Extra
+import Markdown
 import Parser
 import Ren.Compiler exposing (Target(..))
 import Ren.Data.Module
+import Ren.Docs
 import Ren.Examples
-import UI.Button
+import Result.Extra
+import UI.Editor
 import UI.Layout
 
 
@@ -53,11 +54,17 @@ main =
 {-| -}
 type alias Model =
     { source : String
-    , output : Maybe String
-    , lastSuccessfulOutput : String
-    , console : List ( String, String )
-    , size : String
+    , output : Result String String
+    , console : ( Bool, List ( String, String ) )
+    , tab : Tab
     }
+
+
+type Tab
+    = Code
+    | Docs
+    | View
+    | Examples
 
 
 {-| -}
@@ -69,14 +76,22 @@ type alias Flags =
 {-| -}
 init : Flags -> IO Msg Model
 init flags =
+    let
+        model =
+            { source = ""
+            , output = Err ""
+            , console = ( True, [] )
+            , tab = Code
+            }
+    in
     case flags.code of
         Just source ->
-            Data.IO.pure (Model "" Nothing "" [] "1/2")
+            Data.IO.pure model
                 |> Data.IO.map (compileInput source)
 
         Nothing ->
-            Data.IO.pure (Model "" Nothing "" [] "1/2")
-                |> Data.IO.map (compileInput Ren.Examples.helloworld)
+            Data.IO.pure model
+                |> Data.IO.map (compileInput Ren.Examples.bottlesOfBeer)
 
 
 
@@ -97,17 +112,16 @@ type Input
 
 {-| -}
 type Button
-    = New
+    = Run
       --
-    | HelloWorld
-    | LetExample
-    | FunExample
-    | PrimitivesExample
+    | New
       --
-    | Run
     | Share
-    | Expand
-    | Shrink
+      --
+    | ToggleConsole
+    | ClearConsole
+      --
+    | SwitchTab Tab
 
 
 {-| -}
@@ -118,45 +132,33 @@ update msg model =
             Data.IO.pure model
                 |> Data.IO.map (compileInput input)
 
-        Clicked New ->
-            Data.IO.pure model
-                |> Data.IO.map (\m -> { m | source = "", output = Just "" })
-
-        Clicked HelloWorld ->
-            Data.IO.pure model
-                |> Data.IO.map (compileInput Ren.Examples.helloworld)
-
-        Clicked LetExample ->
-            Data.IO.pure model
-                |> Data.IO.map (compileInput Ren.Examples.letExample)
-
-        Clicked FunExample ->
-            Data.IO.pure model
-                |> Data.IO.map (compileInput Ren.Examples.funExample)
-
-        Clicked PrimitivesExample ->
-            Data.IO.pure model
-                |> Data.IO.map (compileInput Ren.Examples.primitivesExample)
-
         Clicked Run ->
             Data.IO.pure model
-                |> Data.IO.with (toJavascript model.output)
+                |> Data.IO.with (toJavascript <| Result.toMaybe model.output)
+
+        Clicked New ->
+            { model | source = "", output = Ok "" }
+                |> Data.IO.pure
 
         Clicked Share ->
             Data.IO.pure model
                 |> Data.IO.with (toClipboard model.source)
 
-        Clicked Expand ->
-            Data.IO.pure model
-                |> Data.IO.map (\m -> { m | size = "full" })
+        Clicked ToggleConsole ->
+            { model | console = Tuple.mapFirst Basics.not model.console }
+                |> Data.IO.pure
 
-        Clicked Shrink ->
-            Data.IO.pure model
-                |> Data.IO.map (\m -> { m | size = "1/2" })
+        Clicked ClearConsole ->
+            { model | console = ( True, [] ) }
+                |> Data.IO.pure
+
+        Clicked (SwitchTab tab) ->
+            { model | tab = tab }
+                |> Data.IO.pure
 
         ToConsole message ->
-            Data.IO.pure model
-                |> Data.IO.map (\m -> { m | console = message :: m.console })
+            { model | console = Tuple.mapSecond ((::) message) model.console }
+                |> Data.IO.pure
 
 
 {-| -}
@@ -179,19 +181,20 @@ parseInput input =
 {-| -}
 compileInput : String -> Model -> Model
 compileInput input model =
-    case parseInput input |> Result.map Ren.Compiler.optimise |> Result.map (Ren.Compiler.emit ESModule) of
-        Ok code ->
-            { model
-                | source = input
-                , output = Just code
-                , lastSuccessfulOutput = code
-            }
+    let
+        lastOutput =
+            case model.output of
+                Ok output ->
+                    Err output
 
-        Err _ ->
-            { model
-                | source = input
-                , output = Nothing
-            }
+                Err output ->
+                    Err output
+    in
+    parseInput input
+        |> Result.map (Ren.Compiler.optimise >> Ren.Compiler.emit ESModule)
+        |> Result.map String.trim
+        |> Result.map (\code -> { model | source = input, output = Ok code })
+        |> Result.withDefault { model | source = input, output = lastOutput }
 
 
 
@@ -200,154 +203,215 @@ compileInput input model =
 
 view : Model -> Html Msg
 view model =
-    UI.Layout.centred
-        [ Html.Attributes.class "w-full h-full bg-gray-50"
-        ]
-        [ UI.Layout.stack
-            [ Html.Attributes.class "transition-all duration-300 ease-in-out"
-            , Html.Attributes.class <| "w-full xl:w-" ++ model.size
-            , Html.Attributes.class <| "h-full xl:h-" ++ model.size
-            , Html.Attributes.class "rounded-bl rounded-br shadow-lg"
-            ]
-            [ viewToolbar model
-            , viewSplitEditor model
-            , UI.Layout.stack
-                [ Html.Attributes.class "bg-gray-100 flex-col-reverse overflow-y-scroll"
-                , Html.Attributes.class "transition-all duration-300 ease-in-out"
-                , Html.Attributes.class "font-mono p-1 max-h-64"
-                , Html.Attributes.class <|
-                    if model.size == "full" then
-                        "flex-1"
-
-                    else
-                        "h-16"
-                ]
-                (List.map
-                    (\( time, message ) ->
-                        UI.Layout.row
-                            [ Html.Attributes.class "" ]
-                            [ Html.span
-                                [ Html.Attributes.class "mr-2 text-gray-400" ]
-                                [ "[{time}] >"
-                                    |> String.replace "{time}" time
-                                    |> Html.text
-                                ]
-                            , Html.pre
-                                [ Html.Attributes.class "flex-1" ]
-                                [ Html.text message ]
-                            ]
-                    )
-                    model.console
-                )
-            ]
-        ]
-
-
-viewToolbar : Model -> Html Msg
-viewToolbar model =
-    UI.Layout.row
-        [ Html.Attributes.class "bg-ren-500 text-white justify-between" ]
-        [ UI.Layout.row []
-            [ Html.span
-                [ Html.Attributes.class "p-2 font-bold" ]
-                [ Html.text "Ren Playground" ]
-            , Html.span
-                [ Html.Attributes.class "p-2 text-gray-200 select-none cursor-default" ]
-                [ Html.text "|" ]
-            , UI.Button.text (Clicked New) "New" []
-            , viewToolbarDropdownMenu "Examples"
-                [ Button "Hello world" (Clicked HelloWorld)
-                , Separator
-                , Button "Language: let" (Clicked LetExample)
-                , Button "Language: fun" (Clicked FunExample)
-                , Button "Language: primitives" (Clicked PrimitivesExample)
-                ]
-            , Html.span
-                [ Html.Attributes.class "p-2 text-gray-200 select-none cursor-default" ]
-                [ Html.text "|" ]
-            ]
+    UI.Layout.stack
+        [ Html.Attributes.class "bg-gray-50 w-full h-full text-sm" ]
+        [ viewToolbar
         , UI.Layout.row
-            [ Html.Attributes.class "p-2 text-white" ]
-            [ UI.Button.icon (Clicked Run) FeatherIcons.play [ Html.Attributes.class "mr-2" ]
-            , UI.Button.icon (Clicked Share) FeatherIcons.share [ Html.Attributes.class "mr-2" ]
-            , Html.Extra.toggle
-                (UI.Button.icon (Clicked Shrink) FeatherIcons.minimize2 [])
-                (UI.Button.icon (Clicked Expand) FeatherIcons.maximize2 [])
-                (model.size == "full")
+            [ Html.Attributes.class "flex-1" ]
+            [ viewEditor model
+            , Html.hr [ Html.Attributes.class "border border-gray-200" ] []
+            , viewSidepanel model
             ]
         ]
 
 
-viewToolbarDropdownMenu : String -> List ToolbarMenuItem -> Html Msg
-viewToolbarDropdownMenu label items =
-    Html.div
-        [ Html.Attributes.class "group inline-block relative" ]
-        [ Html.span
-            [ Html.Attributes.class "inline-block p-2 select-none cursor-default" ]
-            [ Html.text label ]
-        , UI.Layout.stack
-            [ Html.Attributes.class "absolute hidden group-hover:block bg-ren-500 z-10 shadow-md rounded-b-lg" ]
-            (List.map viewToolbarDropdownMenuItem items)
-        ]
+
+-- VIEW: TOOLBAR ---------------------------------------------------------------
 
 
-type ToolbarMenuItem
-    = Button String Msg
-    | Separator
-
-
-viewToolbarDropdownMenuItem : ToolbarMenuItem -> Html Msg
-viewToolbarDropdownMenuItem item =
-    case item of
-        Button label msg ->
-            UI.Button.text msg
-                label
-                [ Html.Attributes.class "hover:bg-ren-600 py-2 w-full block whitespace-nowrap text-left rounded-b-lg " ]
-
-        Separator ->
-            Html.hr [] []
-
-
-viewSplitEditor : Model -> Html Msg
-viewSplitEditor model =
+viewToolbar : Html Msg
+viewToolbar =
     UI.Layout.row
-        [ Html.Attributes.class "flex-1 bg-white font-mono"
+        [ Html.Attributes.class "bg-pink-300 text-white font-mono" ]
+        [ viewToolbarButton Run "Run"
+        , Html.span [ Html.Attributes.class "m-2 border border-white" ] []
+        , viewToolbarButton New "New"
+        , viewToolbarButton (SwitchTab Examples) "Examples"
+        , Html.span [ Html.Attributes.class "m-2 border border-white" ] []
+        , viewToolbarButton (SwitchTab Docs) "Help"
+        , viewToolbarButton Share "Share"
+        , Html.span [ Html.Attributes.class "m-2 border border-white" ] []
+        , viewToolbarButton (SwitchTab Code) "Show JS"
+        , viewToolbarButton (SwitchTab View) "Show HTML"
         ]
-        [ Html.textarea
-            [ Html.Attributes.class "flex-1 border-r resize-none p-2"
-            , Html.Attributes.value model.source
-            , Html.Attributes.spellcheck False
+
+
+viewToolbarButton : Button -> String -> Html Msg
+viewToolbarButton button text =
+    Html.button
+        [ Html.Attributes.class "px-2 py-1 hover:bg-pink-400"
+        , Html.Events.onClick (Clicked button)
+        ]
+        [ Html.text text ]
+
+
+
+-- VIEW: EDITOR ----------------------------------------------------------------
+
+
+viewEditor : Model -> Html Msg
+viewEditor model =
+    Html.div
+        [ Html.Attributes.class "flex-1 h-full relative bg-white" ]
+        [ UI.Editor.view model.source
+            [ Html.Attributes.id "ren"
+            , UI.Editor.language "ren"
             , Html.Events.onInput (Typed Source)
             ]
-            []
-        , Html.textarea
-            [ Html.Attributes.class "flex-1 border-l resize-none p-2"
-            , Html.Attributes.Extra.classWhen "opacity-25" <|
-                model.output
-                    == Nothing
-            , Html.Attributes.value <|
-                Maybe.withDefault model.lastSuccessfulOutput model.output
-            , Html.Attributes.readonly True
+        , viewEditorLanguage "ren"
+        ]
+
+
+viewEditorLanguage : String -> Html Msg
+viewEditorLanguage lang =
+    Html.span
+        [ Html.Attributes.class "absolute right-0 top-0 px-2 py-1"
+        , Html.Attributes.class "bg-gray-100 text-black text-xs"
+        ]
+        [ Html.text <| "." ++ lang ]
+
+
+
+-- VIEW: SIDEPANEL -------------------------------------------------------------
+
+
+viewSidepanel : Model -> Html Msg
+viewSidepanel model =
+    UI.Layout.stack
+        [ Html.Attributes.class "flex-1 relative h-full w-2/5" ]
+        [ viewCodeSidepanel model.tab model.output
+        , viewOutputSidepanel model.tab
+        , viewExamplesSidepanel model.tab
+        , viewDocsSidepanel model.tab
+        , viewConsole model.console
+        ]
+
+
+viewCodeSidepanel : Tab -> Result String String -> Html Msg
+viewCodeSidepanel tab code =
+    if tab == Code then
+        UI.Layout.stack
+            [ Html.Attributes.class "relative flex-1"
+            ]
+            [ UI.Editor.view (Result.Extra.unwrap code)
+                [ Html.Attributes.id "js"
+                , UI.Editor.readonly True
+                , UI.Editor.language "javascript"
+                , Html.Attributes.class "opacity-50 filter blur-sm"
+                    |> Html.Attributes.Extra.when (Result.Extra.isErr code)
+                ]
+            , viewEditorLanguage "js"
+            ]
+
+    else
+        Html.text ""
+
+
+viewOutputSidepanel : Tab -> Html Msg
+viewOutputSidepanel tab =
+    Html.div
+        [ Html.Attributes.class "flex-grow h-0 overflow-y-scroll p-2"
+
+        -- This is hidden rather than removed from the DOM because we don't want
+        -- elm to re-render this element because it may have HTML injected into
+        -- it that elm's vdom doesn't know about!
+        , Html.Attributes.Extra.when (tab /= View) (Html.Attributes.class "hidden")
+        ]
+        [ Html.div
+            [ Html.Attributes.id "playground-display"
+            , Html.Attributes.class "font-sans prose"
             ]
             []
         ]
 
 
+viewExamplesSidepanel : Tab -> Html Msg
+viewExamplesSidepanel tab =
+    if tab == Examples then
+        UI.Layout.stack
+            [ Html.Attributes.class "flex-1" ]
+            []
 
--- [ UI.Editor.editor
---     [ UI.Editor.language "ren"
---     , Html.Attributes.value model.source
---     , Html.Attributes.class "flex-1 border-r"
---     , UI.Editor.onInput (Typed Source)
---     ]
--- , UI.Editor.viewer
---     [ UI.Editor.language "javascript"
---     , Html.Attributes.value <| Maybe.withDefault model.lastSuccessfulOutput model.output
---     , Html.Attributes.Extra.classWhen "opacity-25" (model.output == Nothing)
---     , Html.Attributes.class "flex-1 border-l"
---     , Html.Attributes.readonly True
---     ]
--- ]
+    else
+        Html.text ""
+
+
+viewDocsSidepanel : Tab -> Html Msg
+viewDocsSidepanel tab =
+    if tab == Docs then
+        Html.div
+            [ Html.Attributes.class "flex-grow h-0 overflow-y-scroll py-8"
+            , Html.Attributes.class "space-y-8"
+            ]
+            Ren.Docs.all
+
+    else
+        Html.text ""
+
+
+
+-- VIEW: CONSOLE ---------------------------------------------------------------
+
+
+viewConsole : ( Bool, List ( String, String ) ) -> Html Msg
+viewConsole ( visible, history ) =
+    if visible then
+        UI.Layout.stack
+            [ Html.Attributes.class "relative h-64 bg-gray-200 overflow-hidden" ]
+            [ UI.Layout.row
+                [ Html.Attributes.class "absolute top-0 right-0 justify-end" ]
+                [ viewConsoleButton (Clicked ToggleConsole) <|
+                    if visible then
+                        "Hide"
+
+                    else
+                        "Show"
+                , viewConsoleButton (Clicked ClearConsole) "Clear"
+                ]
+            , UI.Layout.stack
+                [ Html.Attributes.class "m-2 overflow-y-scroll flex-col-reverse"
+                , Html.Attributes.class "hidden"
+                    |> Html.Attributes.Extra.when (Basics.not visible)
+                ]
+                (List.map viewConsoleMessage history)
+            ]
+
+    else
+        UI.Layout.row
+            [ Html.Attributes.class "justify-end" ]
+            [ viewConsoleButton (Clicked ToggleConsole) <|
+                if visible then
+                    "Hide"
+
+                else
+                    "Show"
+            , viewConsoleButton (Clicked ClearConsole) "Clear"
+            ]
+
+
+viewConsoleButton : Msg -> String -> Html Msg
+viewConsoleButton msg text =
+    Html.button
+        [ Html.Attributes.class "text-xs px-2 py-1 bg-pink-300 hover:bg-pink-400 text-white"
+        , Html.Events.onClick msg
+        ]
+        [ Html.text text ]
+
+
+viewConsoleMessage : ( String, String ) -> Html Msg
+viewConsoleMessage ( timestamp, message ) =
+    UI.Layout.row
+        [ Html.Attributes.class "mx-4" ]
+        [ Html.span
+            [ Html.Attributes.class "select-none" ]
+            [ Html.text <| timestamp ++ ":" ]
+        , Html.span
+            [ Html.Attributes.class "ml-2 whitespace-pre" ]
+            [ Html.text message ]
+        ]
+
+
+
 -- SUBSCRIPTIONS ---------------------------------------------------------------
 
 

@@ -22,8 +22,13 @@
   "devDependencies": {
     "@parcel/transformer-elm": "^2.0.0-beta.2",
     "elm": "^0.19.1-5",
+    "http-server": "^13.0.0",
     "node-elm-compiler": "^5.0.6",
     "parcel": "^2.0.0-beta.2",
     "parcel-reporter-static-files-copy": "^1.3.0"
+  },
+  "dependencies": {
+    "@twind/typography": "^0.0.2",
+    "codeflask": "^1.4.1"
   }
 }
