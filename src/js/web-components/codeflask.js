@@ -15,7 +15,7 @@ export class CodeEditor extends HTMLElement {
                 }
 
                 * {
-                    font-family: BQN386, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
                 }
             </style>`
     }
@@ -114,4 +114,8 @@ export class CodeEditor extends HTMLElement {
         }
     }
 
+}
+
+export function register(tag) {
+    window.customElements.define(tag, CodeEditor)
 }

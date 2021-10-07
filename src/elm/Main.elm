@@ -8,12 +8,12 @@ import Html exposing (Html)
 import Html.Attributes
 import Html.Attributes.Extra
 import Html.Events
-import Markdown
 import Parser
+import Ports.Console
 import Ren.Compiler exposing (Target(..))
-import Ren.Data.Module
 import Ren.Docs
 import Ren.Examples
+import Ren.Language
 import Result.Extra
 import UI.Editor
 import UI.Layout
@@ -27,9 +27,6 @@ port toClipboard : String -> Cmd msg
 
 
 port toJavascript : Maybe String -> Cmd msg
-
-
-port toConsole : (( String, String ) -> msg) -> Sub msg
 
 
 
@@ -102,7 +99,7 @@ init flags =
 type Msg
     = Typed Input String
     | Clicked Button
-    | ToConsole ( String, String )
+    | FromConsole ( String, String )
 
 
 {-| -}
@@ -156,7 +153,7 @@ update msg model =
             { model | tab = tab }
                 |> Data.IO.pure
 
-        ToConsole message ->
+        FromConsole message ->
             { model | console = Tuple.mapSecond ((::) message) model.console }
                 |> Data.IO.pure
 
@@ -166,16 +163,24 @@ parseInput : String -> Result (List Parser.DeadEnd) Ren.Compiler.Module
 parseInput input =
     let
         stdlib =
-            [ Ren.Data.Module.import_ "ren/array" [ "$Array" ] []
-            , Ren.Data.Module.import_ "ren/compare" [ "$Compare" ] []
-            , Ren.Data.Module.import_ "ren/function" [ "$Function" ] []
-            , Ren.Data.Module.import_ "ren/logic" [ "$Logic" ] []
-            , Ren.Data.Module.import_ "ren/math" [ "$Math" ] []
-            , Ren.Data.Module.import_ "ren/object" [ "$Object" ] []
+            [ Ren.Language.Import "ren/array" [ "Array" ] []
+            , Ren.Language.Import "ren/compare" [ "Compare" ] []
+            , Ren.Language.Import "ren/function" [ "Function" ] []
+            , Ren.Language.Import "ren/logic" [ "Logic" ] []
+            , Ren.Language.Import "ren/math" [ "Math" ] []
+            , Ren.Language.Import "ren/maybe" [ "Maybe" ] []
+            , Ren.Language.Import "ren/object" [ "Object" ] []
+            , Ren.Language.Import "ren/promise" [ "Promise" ] []
+            , Ren.Language.Import "ren/string" [ "String" ] []
             ]
+
+        addStdlib { imports, declarations } =
+            { imports = stdlib ++ imports
+            , declarations = declarations
+            }
     in
     Ren.Compiler.parse input
-        |> Result.map (\m -> List.foldl Ren.Data.Module.addImport m stdlib)
+        |> Result.map addStdlib
 
 
 {-| -}
@@ -192,7 +197,6 @@ compileInput input model =
     in
     parseInput input
         |> Result.map (Ren.Compiler.optimise >> Ren.Compiler.emit ESModule)
-        |> Result.map String.trim
         |> Result.map (\code -> { model | source = input, output = Ok code })
         |> Result.withDefault { model | source = input, output = lastOutput }
 
@@ -357,7 +361,7 @@ viewConsole : ( Bool, List ( String, String ) ) -> Html Msg
 viewConsole ( visible, history ) =
     if visible then
         UI.Layout.stack
-            [ Html.Attributes.class "relative h-64 bg-gray-200 overflow-hidden" ]
+            [ Html.Attributes.class "relative h-64 bg-gray-200 overflow-hidden font-mono" ]
             [ UI.Layout.row
                 [ Html.Attributes.class "absolute top-0 right-0 justify-end" ]
                 [ viewConsoleButton (Clicked ToggleConsole) <|
@@ -418,5 +422,5 @@ viewConsoleMessage ( timestamp, message ) =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ toConsole ToConsole
+        [ Ports.Console.onMessage (\( _, time, text ) -> FromConsole ( time, text ))
         ]

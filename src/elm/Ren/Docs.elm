@@ -227,8 +227,8 @@ math =
 
 - `add : Number → Number → Number`
 - `add : Number → String → String`
-- `add : Html msg → Number → String`
-- `add : Html msg → String → String`
+- `add : String → Number → String`
+- `add : String → String → String`
 
 - `sub : Number → Number → Number`
 
@@ -265,11 +265,11 @@ object =
     makeDoc """
 ## ren/object
 
-- `get : Html msg → Object → Maybe a`
+- `get : String → Object → Maybe a`
 
-- `set : Html msg → a → Object → Object`
+- `set : String → a → Object → Object`
 
-- `has : Html msg → Object → Boolean`
+- `has : String → Object → Boolean`
 """
 
 

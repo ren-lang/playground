@@ -13,7 +13,7 @@ pub fun main = _ =>  {
         |> forEach console.log 
 }
 
-pub fun verse = n => when n
+fun verse = n => when n
     is 0 =>
         'No more bottles of beer on the wall, no more bottles of beer. ' +
         'Go to the store and buy some more, 99 bottles of beer on the wall.'
@@ -21,7 +21,7 @@ pub fun verse = n => when n
         `${bottles n} of beer on the wall, ${bottles n} of beer. ` +
         `Take one down and pass it around, ${bottles (n - 1)} of beer on the wall.`
 
-pub fun bottles = n => when n
+fun bottles = n => when n
     is 0 => 'no more bottles'
     is 1 => '1 bottle'
     else => `${n} bottles`
