@@ -25,3 +25,23 @@ export function compose(f) {
         return g(f(x))
     }
 }
+
+
+// CURRYING --------------------------------------------------------------------
+export function curry2(f) {
+    return (a) => (b) => {
+        return f(a, b)
+    }
+}
+
+export function curry3(f) {
+    return (a) => (b) => (c) => {
+        return f(a, b, c)
+    }
+}
+
+export function curry4(f) {
+    return (a) => (b) => (c) => (d) => {
+        return f(a, b, c, d)
+    }
+}
