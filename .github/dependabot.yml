@@ -1,0 +1,11 @@
+version: 2
+updates:
+    - package-ecosystem: elm
+      directory: ./
+      schedule:
+          interval: daily
+      allow:
+          - dependency-name: 'ren-lang/compiler'
+      reviewers:
+          - 'hayleigh-dot-dev'
+          - 'aslilac'
